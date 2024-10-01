@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Центр управления дроном</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .control-section {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #008BFF;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0036b3;
+        }
+        .status {
+            margin-top: 20px;
+        }
+        .alert {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Центр управления дроном</h1>
+    <div class="container">
+        <div class="control-section">
+            <h2>Управление позицией</h2>
+            <label for="position">Координаты (x, y):</label>
+            <input type="text" id="position" placeholder="Введите координаты, например: 10, 20">
+            <button onclick="updatePosition()">Обновить позицию</button>
+        </div>
+
+        <div class="control-section">
+            <h2>Управление высотой</h2>
+            <label for="altitude">Высота (м):</label>
+            <input type="number" id="altitude" placeholder="Введите высоту">
+            <button onclick="updateAltitude()">Обновить высоту</button>
+        </div>
+
+        <div class="control-section">
+            <h2>Управление скоростью</h2>
+            <label for="speed">Скорость (м/с):</label>
+            <input type="number" id="speed" placeholder="Введите скорость">
+            <button onclick="updateSpeed()">Обновить скорость</button>
+        </div>
+
+        <div class="control-section">
+            <h2>Проверка заряда батареи</h2>
+            <button onclick="checkBattery()">Проверить заряд</button>
+        </div>
+
+        <div class="status" id="status">
+            <h2>Статус дрона</h2>
+            <div id="drone-status"></div>
+            <div id="alert" class="alert"></div>
+        </div>
+    </div>
+
+    <script>
+        // Функция для обновления позиции дрона
+        function updatePosition() {
+            const positionInput = document.getElementById('position').value;
+            const position = positionInput.split(',').map(Number); // Преобразуем строку в массив чисел
+            fetch('/position', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ position: position }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateDroneStatus(data);
+            });
+        }
+
+        // Функция обновления высоты дрона
+        function updateAltitude() {
+            const altitude = document.getElementById('altitude').value;
+            fetch('/altitude', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ altitude: Number(altitude) }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateDroneStatus(data);
+            });
+        }
+
+        // Функция обновления скорости БПЛА
+        function updateSpeed() {
+            const speed = document.getElementById('speed').value;
+            fetch('/speed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ speed: Number(speed) }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateDroneStatus(data);
+            });
+        }
+
+        // Функция проверки заряда батареи
+        function checkBattery() {
+            fetch('/battery')
+            .then(response => response.json())
+            .then(data => {
+                if (data.alert) {
+                    document.getElementById('alert').innerText = data.alert;
+                } else {
+                    document.getElementById('alert').innerText = '';
+                }
+                updateDroneStatus(data);
+            });
+        }
+
+        // Функция обновления стaтуса БПЛА на странице
+        function updateDroneStatus(data) {
+            document.getElementById('drone-status').innerHTML = `
+                <p>Высота: ${data.altitude} м</p>
+                <p>Скорость: ${data.speed} м/с</p>
+                <p>Координаты: (${data.position[0]}, ${data.position[1]})</p>
+                <p>Уровень заряда батареи: ${data.battery_level}%</p>
+                <p>Направление: ${data.direction}°</p>
+            `;
+        }
+
+        // Инициализaция: получение текущего стaтуса БПЛА при загрузке страницы
+        window.onload = function() {
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                updateDroneStatus(data);
+            });
+        };
+    </script>
+</body>
+</html>
